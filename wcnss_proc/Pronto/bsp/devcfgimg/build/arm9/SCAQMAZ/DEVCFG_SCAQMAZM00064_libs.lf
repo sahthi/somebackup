@@ -1,0 +1,25 @@
+#============================================================================
+#  Name:                                                                     
+#    DEVCFG_SCAQMAZM00064_libs.lf 
+#
+#  Description:                                                              
+#    None 
+#                                                                            
+# Copyright (c) 2017 by QUALCOMM, Incorporated.  All Rights Reserved.        
+#============================================================================
+#                                                                            
+# *** AUTO GENERATED FILE - DO NOT EDIT                                      
+#                                                                            
+# GENERATED: Thu Apr 13 22:39:00 2017 
+#============================================================================
+..\..\..\core\buses\icb\build\devcfg_img\arm9\SCAQMAZ\icb_cfg_lib.lib
+..\..\..\core\dal\config\build\devcfg_img\arm9\SCAQMAZ\DALConfig.lib
+..\..\..\core\debugtrace\hwevent\dal\build\devcfg_img\arm9\SCAQMAZ\hwevent_cfg.lib
+..\..\..\core\debugtrace\tfunnel\dal\build\devcfg_img\arm9\SCAQMAZ\tfunnel_cfg.lib
+..\..\..\core\power\spm\build\devcfg_img\arm9\SCAQMAZ\SPMCfg.lib
+..\..\..\core\systemdrivers\GPIOInt\build\devcfg_img\arm9\SCAQMAZ\GPIOIntCfg.lib
+..\..\..\core\systemdrivers\InterruptController\build\devcfg_img\arm9\SCAQMAZ\DALInterruptControllerCfg.lib
+..\..\..\core\systemdrivers\clock\build\devcfg_img\arm9\SCAQMAZ\Clock_msm8909_bsp.lib
+..\..\..\core\systemdrivers\hwio\build\devcfg_img\arm9\SCAQMAZ\hwio_lib.lib
+..\..\..\core\systemdrivers\pmic\config\build\devcfg_img\arm9\SCAQMAZ\pmic_config_wcnss.lib
+..\..\..\core\systemdrivers\pmic\config\build\devcfg_img\arm9\SCAQMAZ\pmic_config_wcnss.lib

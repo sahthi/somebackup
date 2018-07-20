@@ -1,0 +1,16 @@
+#============================================================================
+#  Name:                                                                     
+#    DEVCFG_SCAQMAZM00064_objs.lf 
+#
+#  Description:                                                              
+#    None 
+#                                                                            
+# Copyright (c) 2017 by QUALCOMM, Incorporated.  All Rights Reserved.        
+#============================================================================
+#                                                                            
+# *** AUTO GENERATED FILE - DO NOT EDIT                                      
+#                                                                            
+# GENERATED: Thu Apr 13 22:39:20 2017 
+#============================================================================
+..\..\..\core\dal\config\build\devcfg_img\arm9\SCAQMAZ\devcfg_data.o
+..\devcfgimg\build\arm9\devcfg_img\arm9\SCAQMAZ\devcfg_main.o
