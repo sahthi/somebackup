@@ -1,0 +1,12 @@
+#===============================================================================
+#                    Copyright 2012 QUALCOMM Incorporated.
+#                           All Rights Reserved.
+#                         QUALCOMM Proprietary/GTDR
+#===============================================================================
+# SDCC Libs
+#-------------------------------------------------------------------------------
+Import('env')
+
+# set default script name for supported targets
+if env['MSM_ID'] in ['8084']:
+   env.SConscript("ufs_src.sconscript", exports='env')

@@ -1,0 +1,179 @@
+/*
+#====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*
+#
+#                     SCATTER LOADING DESCRIPTION FILE
+#
+#  Copyright 2013 by QUALCOMM Incorporated. All Rights Reserved.
+#
+#  GENERAL DESCRIPTION
+#
+#  The scatter loading description file is used to define the SBL1 memory map.
+#*====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*/
+//===========================================================================
+//
+//                           EDIT HISTORY FOR FILE
+//  This section contains comments describing changes made to the module.
+//  Notice that changes are listed in reverse chronological order.
+//
+//
+// when       who     what, where, why
+// --------   ---     -------------------------------------------------------
+// 01/08/14   ck      Added region in sys_debug for SBL to store QSEE entry point
+//                    and if it's 32/64 bit.
+// 12/27/13   ck      Renamed dbi to sys_debug
+// 09/17/13   ck      Broke up into multi segments for new elf output
+// 09/10/13   ck      Inital revision
+
+#include "boot_target.h"
+
+//the size of entire image, must be smaller than 448KB
+#define SBL1_IMAGE_SIZE   (448 * 1024)
+
+CODE_ROM SCL_SBL1_CODE_BASE SCL_SBL1_CODE_SIZE
+{ 
+  // This section contains SBL1's code and ro data
+  SBL1_ROM SCL_SBL1_CODE_BASE ALIGN 0x8
+  {
+    sbl1.o (SBL1_VECTORS, +FIRST)
+    sbl1.o (SBL1_ENTRY)
+    * (+RO-CODE)
+    * (+RO-DATA, LAST)
+  }
+}
+
+CODE_STACK SCL_SBL1_STACK_BASE SCL_SBL1_STACK_SIZE
+{
+  SBL1_STACK +0x0 ALIGN 0x8
+  {
+    * (BOOT_INTERNAL_STACK)
+  }
+}
+
+CODE_RAM SCL_SBL1_DATA_BASE SCL_SBL1_DATA_SIZE
+{
+  // RW region must follow code region. The region from RW address
+  // to end of SBL will be marked as non executable region in the MMU.
+  // We must align it to 4k boundary to be able to mark it in L2 page table
+  SBL1_DATA_RW +0x0 ALIGN 0x1000
+  {
+    * (+RW)
+  }
+
+
+  // This section contains non DDR ZI. It's allocated right after
+  // SBL1_DATA_RW section
+  SBL1_DATA_ZI ImageLimit(SBL1_DATA_RW)
+  {
+    //Explicitly add only hotplug module's ZI to non DDR ZI, all other file system code should
+    //allocate ZI in DDR
+    fs_hotplug*.o (+ZI)
+    * (BOOT_INTERNAL_HEAP)
+    * (+ZI)
+  }
+
+
+  // Placeholder to reserve space for the boot logger's meta info data.
+  SBL1_LOG_META_INFO_SECTION +0x0 EMPTY SCL_SBL1_BOOT_LOG_META_INFO_SIZE
+  {
+  }
+ 
+ 
+  // Placeholder to reserve buffer space for the boot logger's log messages
+  SBL1_LOG_BUF_SECTION +0x0 EMPTY SCL_SBL1_BOOT_LOG_BUF_SIZE
+  {
+  }
+
+
+  ScatterAssert((ImageLimit(SBL1_LOG_BUF_SECTION) - SCL_SBL1_CODE_BASE)
+                 < SBL1_IMAGE_SIZE)
+}
+
+
+BOOT_DDR SCL_SBL1_DDR_DATA_BASE SCL_SBL1_DDR_DATA_SIZE
+{  
+  //This section contains all ZI that can be allocated in DDR.
+  SBL1_DDR_ZI SCL_SBL1_DDR_ZI_BASE SCL_SBL1_DDR_ZI_SIZE
+  { 
+    //DDR ZI for file system. All ZI from file system code can be stored in DDR except hotplug, which is added to SBL1_DATA_ZI section 
+    fs_*.o (+ZI)
+    hfat*.o(+ZI)
+    Ce*.o (+ZI)
+    
+    //DDR ZI for DAL DDR Heap
+    * (BOOT_EXTERNAL_HEAP)
+    * (BOOT_DDR_ZI_DATA_ZONE)
+  }    
+
+  // This section contains L1 and L2 page table that's allocated in DDR.
+  // SCL_SBL1_DDR_PAGE_TABLE_BASE must be 16k aligned
+  SBL1_DDR_PAGE_TABLE SCL_SBL1_DDR_PAGE_TABLE_BASE SCL_SBL1_DDR_PAGE_TABLE_SIZE
+  {
+    *(BOOT_PAGE_TABLE_ZONE)
+  }
+  
+  //This section contains all ZI for dload and qfprom test framework 
+  //This section is uncached
+  SBL1_DLOAD_ZI  SCL_DLOAD_BUFFERS_BASE SCL_DLOAD_BUFFERS_SIZE
+  {
+    qhsusb_*.o (+ZI)
+    *sahara*.o(+ZI)
+    *dload*.o(+ZI)
+    *(BOOT_UNCACHED_DDR_ZI_ZONE)
+  }
+
+  DEVICEPROGRAMMER_DDR DEVICEPROGRAMMER_DDR_BASE
+  {
+    *(CHANNEL_BUFFER_A_SECTION)
+    *(CHANNEL_BUFFER_B_SECTION)
+    *(TRANSMIT_BUFFER_SECTION)
+  }
+  
+  // Placeholder to reserve space for the boot logger's meta info data.
+  SBL1_DDR_LOG_META_INFO_SECTION SCL_SBL1_DDR_BOOT_LOG_META_INFO_BASE EMPTY SCL_SBL1_DDR_BOOT_LOG_META_INFO_SIZE
+  {
+  }
+  
+  // Placeholder to reserve buffer space for the boot logger's log messages
+  SBL1_DDR_LOG_BUF_SECTION SCL_SBL1_DDR_BOOT_LOG_BUF_BASE EMPTY SCL_SBL1_DDR_BOOT_LOG_BUF_SIZE
+  {
+  }
+}
+
+
+BOOT_SYSTEM_DEBUG SCL_SYSTEM_DEBUG_BASE SCL_SYSTEM_DEBUG_SIZE
+{
+  // This section contains the system debug image code that came from SDI.
+  // It is placed in RPM Code RAM memory above RPM FW.
+  SYSTEM_DEBUG SCL_SYSTEM_DEBUG_BASE SCL_SYSTEM_DEBUG_SIZE
+  {
+    sys_debug.o (SYSTEM_DEBUG_ENTRY, +FIRST)
+    sys_debug*.o (+RO-CODE)
+  }
+  
+  SYSTEM_DEBUG_DATA +0x0 0x400
+  {
+    sys_debug*.o (SYSTEM_DEBUG_DATA)
+    sys_debug*.o (+RW,+ZI)
+  }
+
+  SYSTEM_DEBUG_QSEE_INFO +0x0 0x16
+  { 
+    *(SYSTEM_DEBUG_QSEE_INFO)
+  }
+
+  BOOT_SEGMENT2_DDRFW_TBL +0x0
+  {
+    *(ddr_func_ptr)
+  }
+  
+  BOOT_SEGMENT2_DDRFW +0x0
+  {
+    ddr*.o
+    *BIMC*.o
+    *PHY*.o
+  }  
+
+  ScatterAssert(( ImageLimit(SYSTEM_DEBUG_QSEE_INFO) -
+                  SCL_SYSTEM_DEBUG_BASE)
+                  < SCL_SYSTEM_DEBUG_SIZE)
+}

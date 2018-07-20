@@ -1,0 +1,73 @@
+#===============================================================================
+#                    Copyright 2012 QUALCOMM Incorporated.
+#                           All Rights Reserved.
+#                         QUALCOMM Proprietary/GTDR
+#===============================================================================
+# FS Libs
+#-------------------------------------------------------------------------------
+Import('env')
+env = env.Clone()
+
+#-------------------------------------------------------------------------------
+# Source PATH
+#-------------------------------------------------------------------------------
+SRCPATH = "${BUILD_ROOT}/core/storage/ufs/src"
+
+env.VariantDir('${BUILDPATH}', SRCPATH, duplicate=0)
+
+#-------------------------------------------------------------------------------
+# External depends within CoreBSP
+#-------------------------------------------------------------------------------
+env.RequireExternalApi([
+   'CS',
+   'MODEM_PMIC',
+   'MODEM_RF',
+   'MODEM_SERVICES',
+])
+
+#-------------------------------------------------------------------------------
+# Internal depends within CoreBSP
+#-------------------------------------------------------------------------------
+CBSP_API = [
+   'DAL',
+   'HAL',
+   'BOOT',
+   'DEBUGTOOLS',
+   'HWENGINES',
+   'MPROC',
+   'POWER',
+   'SERVICES',
+   'STORAGE',
+   'SYSTEMDRIVERS',
+
+   # needs to be last also contains wrong comdef.h
+   'KERNEL',   
+]
+
+env.RequirePublicApi(CBSP_API)
+env.RequireRestrictedApi(CBSP_API)
+
+UFS_SOURCES =  [
+   '${BUILDPATH}/ufs_api.c',
+   '${BUILDPATH}/ufs_core.c',
+   '${BUILDPATH}/ufs_memory.c',
+   '${BUILDPATH}/ufs_utp_core.c',
+   '${BUILDPATH}/bsp/ufs_bsp_8084.c',
+]
+
+#Include the following line for dumping out environment variables
+#print env.Dump()
+ufs_obj = env.Object([UFS_SOURCES])
+ufs_lib = env.Library('${BUILDPATH}/ufs', ufs_obj)
+
+
+#-------------------------------------------------------------------------------
+# Add Libraries to image
+#-------------------------------------------------------------------------------
+env.AddLibsToImage(['JSDCC_TOOL_IMAGE', 'DEVICEPROGRAMMER_IMAGE'],
+   [ufs_lib])
+
+if env.has_key('BUILD_BOOT_CHAIN_WITHOUT_UFS') != True:
+   env.AddLibsToImage(['UFS_BOOT_DRIVER'],
+      [ufs_lib])
+

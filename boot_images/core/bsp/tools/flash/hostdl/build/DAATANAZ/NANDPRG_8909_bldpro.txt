@@ -1,0 +1,15 @@
+#============================================================================
+#  Name:                                                                     
+#    NANDPRG_8909_bldpro.txt 
+#
+#  Description:                                                              
+#    None 
+#                                                                            
+# Copyright (c) 2016 by QUALCOMM, Incorporated.  All Rights Reserved.        
+#============================================================================
+#                                                                            
+# *** AUTO GENERATED FILE - DO NOT EDIT                                      
+#                                                                            
+# GENERATED: Wed Dec 14 06:49:15 2016 
+#============================================================================
+./boot_images/build/ms/bin/8909/nand/unsigned/NPRG8909.mbn

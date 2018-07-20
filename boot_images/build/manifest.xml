@@ -1,0 +1,10 @@
+<config>
+  <image_tree>
+    <name>BOOT.BF.3.1.2.c2.2</name>
+    <build_id>BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1</build_id>
+    <branch_point_revision/>
+    <revision>00002</revision>
+    <spin>1</spin>
+    <client>M8909AAAAANAZB</client>
+  </image_tree>
+</config>

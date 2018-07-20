@@ -1,0 +1,56 @@
+#===============================================================================
+#
+# JTAGPROGRAMMER build script
+#
+# GENERAL DESCRIPTION
+#    build script
+#
+# Copyright (c) 2009-2014 by QUALCOMM, Incorporated.
+# All Rights Reserved.
+# QUALCOMM Proprietary/GTDR
+#
+#-------------------------------------------------------------------------------
+#
+#  $Header: //components/rel/boot.bf/3.1.2.c2.2/boot_images/core/bsp/tools/deviceprogrammer/build/SConscript#1 $
+#  $DateTime: 2016/12/12 23:35:46 $
+#  $Author: pwbldsvc $
+#  $Change: 11981336 $
+#                      EDIT HISTORY FOR FILE
+#
+#  This section contains comments describing changes made to the module.
+#  Notice that changes are listed in reverse chronological order.
+#
+# when         who     what, where, why
+# ----------   ---     ---------------------------------------------------------
+# 2014-10-15   sb      Updated for 8909
+# 2013-03-07   ab      Initial checkin for jtagprogrammer for UFS
+#
+#===============================================================================
+
+import os
+Import('env')
+env = env.Clone()
+
+storage_mediums = [ARGUMENTS.get('STORAGE', "emmc")]
+if env['CHIPSET'] in ['apq8084', 'mpq8092']:
+    storage_mediums.append("ufs")
+
+if env['CHIPSET'] in ['apq8084', 'msm8x62', 'mpq8092', 'mdm9x45']:
+	env.Append(CPPDEFINES = [
+            "FEATURE_FIREHOSE_SKIP_CLOCK",
+     ])
+
+if env['CHIPSET'] in ['mdm9x45']:
+	env.Append(CPPDEFINES = [
+            "FEATURE_FIREHOSE_QUSB",
+     ])
+
+variant_names = ['prog', 'validated']
+
+for storage_medium in storage_mediums:
+    for variant_name in variant_names:
+		if storage_medium.lower() == "emmc":
+			env.SConscript('deviceprogrammer_emmc.scons', exports='env variant_name storage_medium')
+		elif storage_medium.lower() == "nand":
+			env.SConscript('deviceprogrammer_nand.scons', exports='env variant_name storage_medium')
+

@@ -1,0 +1,15 @@
+#============================================================================
+#  Name:                                                                     
+#    VALIDATED_EMMC_FIREHOSE_8909_DDR_emmc_bldpro.txt 
+#
+#  Description:                                                              
+#    None 
+#                                                                            
+# Copyright (c) 2016 by QUALCOMM, Incorporated.  All Rights Reserved.        
+#============================================================================
+#                                                                            
+# *** AUTO GENERATED FILE - DO NOT EDIT                                      
+#                                                                            
+# GENERATED: Wed Dec 14 06:50:29 2016 
+#============================================================================
+./boot_images/build/ms/bin/8909/emmc/unsigned/validated_emmc_firehose_8909_ddr.mbn

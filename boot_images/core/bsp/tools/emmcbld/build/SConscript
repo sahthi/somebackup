@@ -1,0 +1,397 @@
+#===============================================================================
+#
+# EMMCBLD build script
+#
+# GENERAL DESCRIPTION
+#    build script
+#
+# Copyright (c) 2009-2010 by QUALCOMM, Incorporated.
+# All Rights Reserved.
+# QUALCOMM Proprietary/GTDR
+#
+#-------------------------------------------------------------------------------
+#
+#  $Header: //source/qcom/qct/core/pkg/bootloaders/dev/abrahma.deviceprg20130515/boot_images/core/bsp/tools/emmcbld/build/emmcbld_streaming.scons#1 $
+#  $DateTime: 2013/05/15 13:57:38 $
+#  $Author: coresvc $
+#  $Change: 3770042 $
+#                      EDIT HISTORY FOR FILE
+#
+#  This section contains comments describing changes made to the module.
+#  Notice that changes are listed in reverse chronological order.
+#
+# when         who     what, where, why
+# ----------   ---     ---------------------------------------------------------
+# 2013-02-21   sy      Include emmcbld.mbn into BuildProduct 
+# 2012-12-12   sy      Change the MBN_ROOT directory to match with the target 
+# 2012-03-05   ah      Changes needed since HEX_BUILDER arguments changed
+# 2012-01-13   ah      Updated for 8930 (1st attempt, everywhere there was 8960)
+# 2011-12-09   ah      Removed outdated code which fixes some build errors for 8960
+# 2011-10-25   ah      No longer need fuse blowing for 8960, removed EMMCBLD_ATTACH_FUNCTION1
+# 2011-10-18   ah      Support for building emmcbld HEX file variants based on features
+# 2011-08-22   ah      Fix emmcbld compilation issue (no longer dependent on sbl1)
+# 2011-06-16   ah      Harmonized for 8660 and 8960
+# 2011-06-15   ah      Updated for 8960
+# 2011-05-26   ah      Updated for 4.1 compiler
+# 2011-05-19   ah      DATA_START_ADDR="+0" changed to account for change in emmcbld_in.scl
+# 2011-04-14   ah      Removed singleimage generation, now done in it's own script
+# 2011-02-16   ab      Always regenerating the EMMCBLD_GEN_LIB
+# 2011-01-11   ab      Setting EMMCBLD_ATTACH_FUNCTION1 to 'yes' for 8660
+# 2010-12-15   ab      Added builder to generate _msimage.mbn
+# 2010-10-29   rh      Adding support for loading external lib file
+# 2010-07-16   rh      Bringup on 8660
+#
+#===============================================================================
+import os
+Import('env')
+env = env.Clone()
+
+#------------------------------------------------------------------------------
+# Check if we need to load this script or just bail-out
+#------------------------------------------------------------------------------
+# alias - First alias is always the target then the other possible aliases
+aliases = [
+   'emmcbld', 
+]
+
+if env['MSMID'] in ['8660']:
+   proc = 'scorpion'
+elif env['MSMID'] in ['8084','8974','8x26','8x62','8x10','8092']:
+    proc = 'krait'
+elif env['CHIPSET'] in ['msm8916', 'msm8936', 'msm8909', 'msm8956']:
+    proc = 'a53'
+else: #if env['MSMID'] in ['8960','8930','8064']:
+   proc = 'arm7'
+
+env.InitImageVars(
+   alias_list = aliases,               	         # list of aliases, unique name index [0]
+   proc = proc,                      	            # proc settings
+   config = 'apps',                             	# config settings
+   build_tags = ['APPS_PROC', 'EMMCBLD_IMAGE', 'EMMCBLD_STREAMING_IMAGE', 'KERNEL_BOOT_DRIVER'],    # list of build tags for sub lib scripts
+   tools = [
+   '${BUILD_ROOT}/tools/build/scons/sectools/sectools_builder.py',
+   'buildspec_builder.py']
+)
+    
+if not env.CheckAlias():
+   Return()
+
+#------------------------------------------------------------------------------
+# Init default values for this PROC/Image
+#------------------------------------------------------------------------------
+env.Replace(BUILD_TOOL_CHAIN = 'yes')
+
+#===============================================================================
+# EMMCBLD build rules
+#===============================================================================
+
+#------------------------------------------------------------------------------
+# Configure and load in USES and path variables
+#------------------------------------------------------------------------------
+env.InitBuildConfig()
+
+#---------------------------------------------------------------------------
+# Load in the tools scripts
+#---------------------------------------------------------------------------
+env.LoadToolScript('arm', toolpath = ['${BUILD_SCRIPTS_ROOT}'])
+env.LoadToolScript('modem_defs', toolpath = ['${BUILD_SCRIPTS_ROOT}'])   
+env.LoadToolScript('hostdl_gen_hex', toolpath = ['${BUILD_ROOT}/core/bsp/tools/flash/build'])
+env.LoadToolScript('scl_builder', toolpath = ['${BUILD_ROOT}/core/bsp/build/scripts'])
+env.LoadToolScript('bin_builder', toolpath = ['${BUILD_ROOT}/core/bsp/build/scripts'])
+env.LoadToolScript('mbn_builder', toolpath = ['${BUILD_ROOT}/core/bsp/build/scripts'])
+
+#env.Replace(ARMLD_NOREMOVE_CMD = "--info unused")
+# Define processor instruction set
+if env['CHIPSET'] in ['msm8916', 'msm8936', 'msm8909', 'msm8956']:
+    env.Replace(ARM_CPU_A53 = "7-A.security")
+    env.Replace(ARM_CPU = "${ARM_CPU_CMD} ${ARM_CPU_A53}")
+else:
+    env.Replace(ARM_CPU_KRAIT = "7-A.security")
+    env.Replace(ARM_CPU = "${ARM_CPU_CMD} ${ARM_CPU_KRAIT}")
+env.Replace(ARM_ALIGN = " ${ARM_NO_UNALIGNED_ACCESS} -UL41")
+
+#Replace MBN_ROOT
+env.Replace(MBN_ROOT = "${BUILD_ROOT}/build/ms/bin/${MSM_ID}/emmc")
+
+
+#------------------------------------------------------------------------------
+# Add extension flags for EMMCBLD
+#------------------------------------------------------------------------------
+if env['BUILD_VER'] == "":
+   env.Replace(BUILD_VER = '0')
+
+if env['MSMID'] in ['8084','8974','8x26','8x62','8x10','8092']:
+##CODE_START_ADDR = "0xFC100000"
+    CODE_START_ADDR      = "0xF800C050"	##"0xFC101050"
+    DATA_START_ADDR      = "+0"
+    IMEM_STACK_BASE      = "0xFC14C000" ##IMEM_STACK_BASE      = "0xFC14C000"  "0xF804C000"
+    CODE_HDR_ADDR        = "0xFC10C000"	##CODE_HDR_ADDR        = "0xFC10C000"  "0xF800C000"
+    ZI_BASE              = "0xFC10C000"
+elif env['CHIPSET'] in ['msm8916', 'msm8936', 'msm8909', 'msm8956']:
+    CODE_START_ADDR      = "0x08005050" # Set to SCL_SBL1_CODE_BASE+0x50
+    DATA_START_ADDR      = "+0"
+    IMEM_STACK_BASE      = "0x08035000"
+    ZI_BASE              = "0x00216000"
+else:
+    CODE_START_ADDR      = "0x2A000050"
+    DATA_START_ADDR      = "+0"
+    IMEM_STACK_BASE      = "0x2A040000"
+    CODE_HDR_ADDR        = "0x2A000000"
+
+#SDC1 -> 0
+#SDC2 -> 1
+#SDC3 -> 2
+#SDC4 -> 3
+EMMCBLD_DRIVENO = ARGUMENTS.get('EMMCBLD_DRIVENO', "0")
+EMMCBLD_HEX_TYPE = ARGUMENTS.get('EMMCBLD_HEX_TYPE', "")
+hex_prefix = 'MPRG'
+
+env.Append(CPPDEFINES = [
+   "BUILD_TOOL_CHAIN",
+   "BUILD_HOSTDL",
+   "BUILD_EHOSTDL",
+   #"FEATURE_EMMCBLD_USE_RPM_STARTUP",
+   "FEATURE_HS_USB_BASIC",
+   "CODE_START_ADDR=" + CODE_START_ADDR,
+   "DATA_START_ADDR=" + DATA_START_ADDR,
+   "ZI_BASE=" + ZI_BASE,
+   "EMMCBLD_IMEM_STACK_BASE=" + IMEM_STACK_BASE,
+   "BOOT_MODULE_BUILD_VERSION=" + env['BUILD_VER'],
+   "BOOT_HEAP_SIZE=0x10000",
+   "FEATURE_STANDALONE_MODEM",
+   "HOSTDL_PROCESS_USB_BUFFERS",
+   "EMMCBLD_USE_DRIVENO=" + EMMCBLD_DRIVENO,
+   "FEATURE_EMMCBLD_DISABLE_UART",
+   #"SDCC_USES_SCORPION_WAIT",
+])
+
+if EMMCBLD_HEX_TYPE.lower()=="read":
+    env.Append(CPPDEFINES = [
+		"FEATURE_EMMCBLD_ENABLE_READ",
+	])
+    hex_prefix = 'READ'
+elif EMMCBLD_HEX_TYPE.lower()=="gpp":
+    env.Append(CPPDEFINES = [
+		"FEATURE_EMMCBLD_ENABLE_GPP",
+	])
+    hex_prefix = 'GPP'
+elif EMMCBLD_HEX_TYPE.lower()=="turbo":
+    env.Append(CPPDEFINES = [
+		"FEATURE_EMMCBLD_NO_HDLC_RX",
+	])
+    hex_prefix = 'FAST'
+else:
+    hex_prefix = 'MPRG'
+    
+#----------------------------------------------------------------------------
+# Source PATH
+#----------------------------------------------------------------------------
+EMMCBLD_SRC  = "${BUILD_ROOT}/core/storage/tools/emmcbld/src/"
+EMMCBLD_ROOT = "${BUILD_ROOT}/core/storage/tools/emmcbld/"
+###EMMCBLD_RPM_PMIC_PATH1	= env['BUILD_ROOT'] + "/modem/rfa/pmic/target/rpm/sbl1/system/build/sbl1/arm7/"+BUILD_ID+"/"
+###EMMCBLD_RPM_PMIC_PATH2	= env['BUILD_ROOT'] + "/modem/rfa/pmic/target/rpm/sbl1/gen/build/sbl1/arm7/"+BUILD_ID+"/"
+
+env.VariantDir('.', EMMCBLD_SRC, duplicate=0)
+
+#-------------------------------------------------------------------------------
+# External depends within CoreBSP
+#-------------------------------------------------------------------------------
+env.RequireExternalApi([
+   'CS',
+   'DSM',
+   'MODEM_1X',
+   'MODEM_ADIE',
+   'MODEM_DATA',
+   'MODEM_FTM',
+   'MODEM_GERAN',
+   'MODEM_GPS',
+   'MODEM_HDR',
+   'MODEM_MDSP',
+   'MODEM_NAS',
+   'MODEM_PMIC',
+   'MODEM_RF',
+   'MODEM_SERVICES',
+   'MODEM_UIM',
+   'MODEM_WCDMA',
+   'MULTIMEDIA_AUDIO',
+   'MULTIMEDIA_DISPLAY',
+   'MULTIMEDIA_GRAPHICS',
+   'MULTIMEDIA',
+   'WIRELESSCONNECTIVITY',
+   'MODEM_PMIC_EXTERNAL'
+])
+
+#-------------------------------------------------------------------------------
+# Internal depends within CoreBSP
+#-------------------------------------------------------------------------------
+CBSP_API = [
+   'DAL',
+   'HAL',
+   'HWIO',
+   'BUSES',
+   'DEBUGTOOLS',
+   'HWENGINES',
+   'IODEVICES',
+   'MPROC',
+   'POWER',
+   'SECUREMSM',
+   'SENSORS',
+   'SERVICES',
+   'STORAGE',
+   'SYSTEMDRIVERS',
+   'WIREDCONNECTIVITY',
+
+   # needs to be last also contains wrong comdef.h   
+   'KERNEL',
+]
+
+env.RequirePublicApi(CBSP_API)
+env.RequireRestrictedApi(CBSP_API)
+
+#-------------------------------------------------------------------------------
+# Sources, libraries
+#-------------------------------------------------------------------------------
+
+EMMCBLD_TARGET_SOURCES = [
+   'emmcbld_main.c',
+   'emmcbld_start.s',
+]
+
+emmcbld_obj = env.Object([
+   EMMCBLD_TARGET_SOURCES,
+])
+
+if env['MSMID'] in ['8660']:
+	EMMCBLD_LIB_INIT_SOURCES = [
+            'emmcbld_hw_init_8660.s',
+            'bsp/emmcbld_bsp_scorpion.c',
+	]
+elif env['MSMID'] in ['8960','8930','8064']:
+	EMMCBLD_LIB_INIT_SOURCES = [
+            'emmcbld_hw_init_8960.s',
+            'bsp/emmcbld_bsp_krait.c',
+	]
+else: #if env['MSMID'] in ['8084','8974','8x26','8x62','8x10','8092']:
+    EMMCBLD_LIB_INIT_SOURCES = [
+            'bsp/emmcbld_bsp_8974.c',
+	]
+
+EMMCBLD_LIB_TARGET_SOURCES = [
+   'emmcbld_imem_init.c',
+   EMMCBLD_LIB_INIT_SOURCES,
+   #'emmcbld_start.s',
+   'emmcbld_main.c',
+   'emmcbld_memctl.c',
+   'emmcbld_packet.c',
+]
+
+
+emmcbld_lib_obj = env.Object([EMMCBLD_LIB_TARGET_SOURCES])
+emmcbld_lib = env.Library('emmcbld', emmcbld_lib_obj)
+build_filename = '%s${MSM_ID}' % hex_prefix
+
+#------------------------------------------------------------------------------
+# Decide which build steps to perform
+#------------------------------------------------------------------------------
+# Regular build steps (no filter) is build everything, once a user starts
+# using filters we have to make decisions depending on user input.
+#
+# The LoadAUSoftwareUnits function will take care of filtering subsystem, units, 
+# etc.  This is to take care of what steps to enable disable from the top level
+# script, such as building files specify in this script i.e. quartz, stubs, etc.
+
+###pmic_lib1 = File(env.subst(EMMCBLD_RPM_PMIC_PATH1+"pmic_rpm_boot_protected.lib"))
+###pmic_lib2 = File(env.subst(EMMCBLD_RPM_PMIC_PATH2+"pmic_rpm_boot_protected.lib"))
+do_local_files = True
+do_link = True
+do_post_link = True
+
+# Get user input from command line
+filter_opt = env.get('FILTER_OPT')
+
+# Limit build processing based on filter option
+if filter_opt is not None:
+   do_link = False
+   do_post_link = False
+
+   if not env.FilterMatch(os.getcwd()):
+      do_local_files = False
+      
+#-------------------------------------------------------------------------------
+# Libraries Section
+#-------------------------------------------------------------------------------
+core_libs, core_objs = env.LoadAUSoftwareUnits('core')
+emmcbld_units = [core_objs, core_libs]
+
+#modem_libs, modem_objs = env.LoadAUSoftwareUnits('modem', 'rfa/pmic')
+#emmcbld_units = [core_objs, core_libs, modem_objs, modem_libs]
+
+##subsystem = ARGUMENTS.get('subsystem', None)
+
+if do_local_files:
+   #============================================================================
+   # EMMCBLD Environment
+   #============================================================================
+
+   #----------------------------------------------------------------------------
+   # Begin building EMMCBLD
+   #----------------------------------------------------------------------------
+   env.Replace(TARGET_NAME = build_filename)
+   env.Replace(MBN_FILE = build_filename)
+
+   #----------------------------------------------------------------------------
+   # Generate Scatter Load File (SCL)
+   #----------------------------------------------------------------------------
+   emmcbld_scl = env.SclBuilder('${SHORT_BUILDPATH}/${TARGET_NAME}', 
+      '${BUILD_ROOT}/core/storage/tools/emmcbld/src/emmcbld_in.scl')
+
+   emmcbld_units.extend(emmcbld_scl)
+
+if do_link:
+   #----------------------------------------------------------------------------
+   # Generate EMMCBLD ELF
+   #----------------------------------------------------------------------------
+   libs_path = env['INSTALL_LIBPATH']
+
+   emmcbld_elf = env.Program('${SHORT_BUILDPATH}/${TARGET_NAME}',
+           source=[core_objs, emmcbld_obj], 
+           LIBS=[core_libs, emmcbld_lib], LIBPATH=libs_path)
+
+   env.Depends(emmcbld_elf, emmcbld_scl)
+   
+   env.Clean(emmcbld_elf, env.subst('${SHORT_BUILDPATH}/${TARGET_NAME}.map'))
+   env.Clean(emmcbld_elf, env.subst('${SHORT_BUILDPATH}/${TARGET_NAME}.sym'))
+
+if do_post_link:   
+   #----------------------------------------------------------------------------
+   # Generate EMMCBLD MBN
+   #----------------------------------------------------------------------------
+   install_unsigned_root = env.SectoolGetUnsignedInstallPath(install_base_dir =env.subst('${MBN_ROOT}'))
+   env.Replace(MBN_FILE = os.path.join(install_unsigned_root, "${TARGET_NAME}"))
+   emmcbld_mbn = env.MbnBuilder('${SHORT_BUILDPATH}/${TARGET_NAME}', emmcbld_elf, 
+         IMAGE_TYPE='emmcbld', FLASH_TYPE="sdcc", MBN_TYPE="elf", ENABLE_ENCRYPT=False)
+
+   #----------------------------------------------------------------------------
+   # Sectools signing
+   #----------------------------------------------------------------------------
+   sectools_signed_mbn = env.SectoolBuilder(
+      target_base_dir = '${SHORT_BUILDPATH}',
+      source=emmcbld_mbn,
+      sign_id="emmcbld",
+      msmid = env['MSM_ID'],
+      sectools_install_base_dir = '${MBN_ROOT}', 
+      install_file_name = "${TARGET_NAME}.mbn")
+   
+   #============================================================================
+   # Define units that will be built
+   #============================================================================
+   emmcbld_units = env.Alias ('arm11_emmcbld_units', [
+      emmcbld_elf,
+      emmcbld_mbn,
+      sectools_signed_mbn,
+   ])
+   
+# Add aliases
+for alias in aliases:
+   env.Alias(alias, emmcbld_units)
+

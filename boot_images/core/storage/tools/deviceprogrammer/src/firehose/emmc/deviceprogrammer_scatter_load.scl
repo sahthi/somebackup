@@ -1,0 +1,138 @@
+// *====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*
+//
+//                     SCATTER LOADING DESCRIPTION FILE TEMPLATE
+//  
+//  Copyright (c) 1998-2014 by QUALCOMM Incorporated. All Rights Reserved.
+//
+//  GENERAL DESCRIPTION
+//
+//  Memory Map for our Lauterbach JTAG ICD FLASH Programming Routine.
+//
+//  This file is a template which gets run through the C pre-processor to
+//  generate the actual scatter load file which will be used.  This allows
+//  this file to be used by all targets and be relocated on the fly.
+//
+//  The code and RW/ZI data all reside between SADDR and PADDR except
+//  for the jtag_flash_param data which starts at PADDR. This area is
+//  where Lauterbach JTAG TRACE32 Debugger commuicates with us and where our buffer
+//  is located. See type_jtag_flash_param struct.
+//                         _______________________
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |         CODE          |
+//       CODE_START_ADDR   _______________________
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |         DATA          |
+//                        |                       |
+//             DATA_ADDR   _______________________
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |    ROM CHIP SELECT    |
+//                        |                       |
+//                        |         AREA          |
+//                        |                       |
+//                        |        (FLASH)        |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//                        |                       |
+//            0x00000000  -------------------------
+//
+//
+//  NOTE:  CODE_START_ADDR and DATA_ADDR will be replaced by CPP during creation of
+//         JFLASH.SCL.  
+//
+//*====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*
+
+/* ===========================================================================
+
+                           EDIT HISTORY FOR FILE
+  This section contains comments describing changes made to the module.
+  Notice that changes are listed in reverse chronological order.
+
+  $Header: //components/rel/boot.bf/3.1.2.c2.2/boot_images/core/storage/tools/deviceprogrammer/src/firehose/emmc/deviceprogrammer_scatter_load.scl#1 $ $DateTime: 2016/12/12 23:35:46 $ $Author: pwbldsvc $
+   
+ when         who     what, where, why
+ ----------   ---     -------------------------------------------------------
+ 2014-10-15    sb     Updated for 8909
+ 2013-06-03    ah     Added legal header
+ 2013-05-31    ab     Initial checkin
+==========================================================================*/
+
+RAM CODE_START_ADDR
+{
+    APP_CODE CODE_START_ADDR 
+    {
+      deviceprogrammer_start.o (DEVICEPROGRAMMER_ENTRY_POINT, +FIRST)
+
+      // Placing scatter load constants here because these define
+      // the layout/relocation of the other regions
+      deviceprogrammer_scatter_load.o (+RW)
+      deviceprogrammer_initialize.o (+RW)
+    }
+
+    APP_RAM_RO +0x0
+    {
+        * (+RO)
+    }
+    
+    //  This block is for RW data
+    APP_RAM_RW RW_START_ADDR
+    {
+      * (+RW)
+    }
+
+    //  This block is for zero init data
+    APP_RAM_ZI ZI_START_ADDR
+    {
+      * (+ZI)
+    }
+
+    CHANNEL_BUFFER_A_ZI CHANNEL_BUFFER_A_START_ADDR
+    {
+        * (CHANNEL_BUFFER_A_SECTION)
+    }
+
+    CHANNEL_BUFFER_B_ZI CHANNEL_BUFFER_B_START_ADDR
+    {
+        * (CHANNEL_BUFFER_B_SECTION)
+    }
+
+    TRANSMIT_BUFFER_ZI TRANSMIT_BUFFER_START_ADDR
+    {
+        * (TRANSMIT_BUFFER_SECTION)
+    }
+
+    USB_ZI USB_ZI_START_ADDR
+    {
+        qhsusb_dc*.o (+ZI)
+        qhsusb_al_bulk.o (+ZI)
+		ufs*.o (+ZI)
+    }
+}
+

@@ -1,0 +1,94 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;=======================================================
+                       =====================
+    2 00000000         ;===  Copyright (c) 2008 Qualcomm Technologies Incorpora
+                       ted. All Rights Reserved.
+    3 00000000         ;=======================================================
+                       =====================
+    4 00000000                 AREA             DAL_ASM, CODE, READONLY
+    5 00000000         ;  CODE32  Same code compiles for nor flash tool image w
+                       hich run on cortex-M3.
+    6 00000000         ;          (RPM). Cortex-M3 is Thumb2 based instruction 
+                       set. Setting it 
+    7 00000000         ;          explicitly to ARM(CODE32) leads to compilatio
+                       n when build for nor 
+    8 00000000         ;          flash image. Let build enviorment choose the 
+                       right cpu when compiling
+    9 00000000         ;          the code(Cortex-M3 or Sparrorw A5)
+   10 00000000         ;=======================================================
+                       =====================
+   11 00000000                 EXPORT           DALFW_LockedGetW
+   12 00000000         ;==  pTarget= r0
+   13 00000000         DALFW_LockedGetW
+   14 00000000 E1901F9F        ldrex            r1,[r0]     ;tag and fetch valu
+                                                            e
+   15 00000004 E1A00001        mov              r0,r1
+   16 00000008 E12FFF1E        bx               r14
+   17 0000000C                 EXPORT           DALFW_LockedConditionalSetW
+   18 0000000C         ;== pTarget=r0, value = r1
+   19 0000000C         DALFW_LockedConditionalSetW
+   20 0000000C E1802F91        strex            r2, r1, [r0]
+   21 00000010 E1A00002        mov              r0, r2      ; return outcome 0 
+                                                            = success
+   22 00000014 E12FFF1E        bx               r14
+   23 00000018                 END
+Command Line: --cpu=Cortex-A7 --apcs=/noswst/interwork --no_unaligned_access -o
+/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_201612
+14_063942/b/boot_images/core/dal/src/build/validated_emmc_firehose_8909_lite/Co
+rtex-A7/DAADANAZ/dal_asm_rvct.o -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.
+c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/dal/src/build -I
+/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_201612
+14_063942/b/boot_images/build/cust -I. -I/local/mnt/workspace/CRMBuilds/BOOT.BF
+.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/api/boot 
+-I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_2016
+1214_063942/b/boot_images/core/api/boot/qfprom -I/local/mnt/workspace/CRMBuilds
+/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/b
+oot/secboot3/src -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M890
+9AAAAANAZB-1_20161214_063942/b/boot_images/core/boot/ddr/common -I/local/mnt/wo
+rkspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/b
+oot_images/core/boot/ddr/hw/msm8909 -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.
+1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/boot/ddr/hw/
+phy -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_
+20161214_063942/b/boot_images/core/boot/ddr/hw/controller -I/local/mnt/workspac
+e/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_im
+ages/core/boot/secboot3/hw/msm8909 -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1
+.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/api/debugtool
+s -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20
+161214_063942/b/boot_images/core/api/dal -I/local/mnt/workspace/CRMBuilds/BOOT.
+BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/api/mpr
+oc -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_2
+0161214_063942/b/boot_images/core/api/services -I/local/mnt/workspace/CRMBuilds
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/a
+pi/systemdrivers -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M890
+9AAAAANAZB-1_20161214_063942/b/boot_images/core/api/systemdrivers/pmic -I/local
+/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063
+942/b/boot_images/core/api/systemdrivers/hwio/msm8909 -I/local/mnt/workspace/CR
+MBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images
+/core/api/kernel/libstd -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-000
+02-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/debugtools/version/src -
+I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161
+214_063942/b/boot_images/core/dal/src -I/local/mnt/workspace/CRMBuilds/BOOT.BF.
+3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/dal/config
+ -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_201
+61214_063942/b/boot_images/core/mproc/smem/inc -I/local/mnt/workspace/CRMBuilds
+/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/s
+ervices/utils/src -I/local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M89
+09AAAAANAZB-1_20161214_063942/b/boot_images/core/systemdrivers/tlmm/inc -I/loca
+l/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_06
+3942/b/boot_images/core/systemdrivers/tlmm/src --list=/local/mnt/workspace/CRMB
+uilds/BOOT.BF.3.1.2.c2.2-00002-M8909AAAAANAZB-1_20161214_063942/b/boot_images/c
+ore/dal/src/build/validated_emmc_firehose_8909_lite/Cortex-A7/DAADANAZ/dal_asm_
+rvct.o.lst --sitelicense /local/mnt/workspace/CRMBuilds/BOOT.BF.3.1.2.c2.2-0000
+2-M8909AAAAANAZB-1_20161214_063942/b/boot_images/core/dal/src/build/validated_e
+mmc_firehose_8909_lite/Cortex-A7/DAADANAZ/dal_asm_rvct.o.i
