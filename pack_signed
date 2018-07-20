@@ -1,0 +1,187 @@
+echo "Start Signning process ....."
+#we are now in pub directory
+save_pwd=$PWD
+  
+###### Warning : below two tables MUST be synced when change ,   they are line to line binded
+sign_path_list=( 
+	"LINUX/android/out/target/product/msm8909_512/system/etc/firmware/venus.mbn"
+	"boot_images/build/ms/bin/8909/emmc${TARGET_DDR_DIR}/sbl1.mbn"
+	"boot_images/build/ms/bin/8909/emmc${TARGET_DDR_DIR}/unsigned/prog_emmc_firehose_8909_ddr.mbn"
+	"LINUX/android/out/target/product/msm8909_512/emmc_appsboot.mbn"
+	"rpm_proc/build/ms/bin/8909/pm8909/rpm.mbn"
+	"modem_proc/build/ms/bin/${MPSS_FLAVOR}/unsigned/mba.mbn"
+	"modem_proc/build/ms/bin/${MPSS_FLAVOR}/unsigned/qdsp6sw.mbn"
+	"wcnss_proc/build/ms/bin/SCAQMAZ/reloc/wcnss.mbn"
+	"trustzone_images/build/ms/bin/MAZAANAA/unsigned/sampleapp.mbn"
+	"trustzone_images/build/ms/bin/MAZAANAA/unsigned/widevine.mbn"
+	"trustzone_images/build/ms/bin/MAZAANAA/unsigned/cmnlib.mbn"
+	"trustzone_images/build/ms/bin/MAZAANAA/unsigned/keymaster.mbn"
+	"trustzone_images/build/ms/bin/MAZAANAA/unsigned/tz.mbn"
+	"modem_proc/build/ms/bin/${MPSS_FLAVOR}/mcfg_sw.mbn"
+	"modem_proc/build/ms/bin/${MPSS_FLAVOR}/mcfg_hw.mbn"
+	"modem_proc/mcfg/configs/mcfg_sw/generic/mbn_ota/reliance.mbn"
+	"modem_proc/mcfg/configs/mcfg_sw/generic/mbn_ota/row.mbn"
+	"trustzone_images/build/ms/bin/MAZAANAA/unsigned/playready.mbn"
+
+   )
+             
+sign_id_list=(
+	"venus"
+	"sbl1"
+	"prog_emmc_ddr"
+	"appsbl"
+	"rpm"
+	"mba"
+	"modem"
+	"wcnss"
+	"sampleapp"
+	"widevine"
+	"cmnlib"
+	"keymaster"
+	"qsee"
+	"mcfg_sw"
+	"mcfg_hw"
+	"mcfg_sw"
+	"mcfg_sw"
+	"playready"
+)
+
+ 
+#process each file 
+
+CHIP_SET=8909
+
+#mkdir for b0x copy
+mkdir -p common/build/bin/asic/pil_split_bins/
+ 
+
+file_cnt=${#sign_path_list[@]}
+((file_cnt-=1))
+
+BACKUP_DIR_ABS=$RELEASE_DIR/MBN_BACKUP_UNSIGN
+
+cp --parents -fr common/tools/sectools/config/8909  $BACKUP_DIR_ABS/
+
+if [ $BLUEBANK_TARGET_PRODUCT  == LF2403S_MSM8909_512 ] ; then
+
+cp -f common/tools/sectools/config/8909_${BLUEBANK_TARGET_PRODUCT}/*    common/tools/sectools/config/8909/
+
+fi
+
+for index in $(seq 0 $file_cnt)
+do 
+		INPUT_FILE=${sign_path_list[$index]##*/}
+		INPUT_FILE_DIR=${sign_path_list[$index]%/*}
+		INPUT_FILE_ABS_PATH=${sign_path_list[$index]}
+		OUTPUT_FILE_DIR=$RELEASE_DIR/signed_files/$CHIP_SET/${sign_id_list[$index]}
+		
+		echo "##############    BLUEBANK SIGNNING ${sign_path_list[$index]} ###################"
+		echo "#sectools.py secimage -s -i "$SRC_TOP_DIR/$INPUT_FILE_ABS_PATH" -g ${sign_id_list[$index]} -p $CHIP_SET -o "$SRC_TOP_DIR/$RELEASE_DIR/signed_files" --cfg_selected_cert_config=OEM-KEYS" 
+		echo "############## ---------------------------------------------- ###################"
+		cd $SRC_TOP_DIR/common/tools/sectools/
+		
+		python sectools.py secimage -s -i "$SRC_TOP_DIR/$INPUT_FILE_ABS_PATH" -g ${sign_id_list[$index]} -p $CHIP_SET -o "$SRC_TOP_DIR/$RELEASE_DIR/signed_files" --cfg_selected_cert_config=OEM-KEYS	
+		
+		cd $SRC_TOP_DIR
+		
+		
+		if [ ! -f $OUTPUT_FILE_DIR/*.mbn ] ; then
+				echo "Signning file ERROR !!!!!!!!!!!!!!!!!!!! pack aborted"
+				exit 1
+		else
+		
+				   
+				 
+				echo "######## BACKUP original file 0 ######### "
+				echo "cp --parents -f ${sign_path_list[$index]}   $BACKUP_DIR_ABS/"
+				cp --parents -f ${sign_path_list[$index]}   $BACKUP_DIR_ABS/
+				
+				
+				#override original file with signed file
+				echo "######## override original file 0 ######### "
+				echo "cp -f 	$OUTPUT_FILE_DIR/*.mbn   $INPUT_FILE_ABS_PATH"
+				cp -f 	$OUTPUT_FILE_DIR/*.mbn   $INPUT_FILE_ABS_PATH
+				
+				
+				
+				
+				# goto unsigned/ 's upper dir ,override same file with same file
+				result=$(echo $INPUT_FILE_DIR | grep "unsigned")
+				if [[ "$result" != "" ]]
+				then
+				    echo "######## BACKUP original file in unsigned upper dir  #########"
+						echo "cp --parents -f ${INPUT_FILE_DIR%/*}/$INPUT_FILE  $BACKUP_DIR_ABS/"     
+				    cp --parents -f ${INPUT_FILE_DIR%/*}/$INPUT_FILE  $BACKUP_DIR_ABS/   
+			
+				
+						echo "cp -f 	$OUTPUT_FILE_DIR/*.mbn   ${INPUT_FILE_DIR%/*}/$INPUT_FILE"				
+						
+						cp -f 	$OUTPUT_FILE_DIR/*.mbn    ${INPUT_FILE_DIR%/*}/$INPUT_FILE	   
+				fi
+				
+				
+				
+				result=$(echo $INPUT_FILE_DIR | grep "reloc")
+				if [[ "$result" != "" ]]
+				then
+					  echo "######## BACKUP original file reloc #########"
+				    echo "cp --parents -f  ${INPUT_FILE_DIR%/*}/$INPUT_FILE  $BACKUP_DIR_ABS/"
+				    cp --parents -f  ${INPUT_FILE_DIR%/*}/$INPUT_FILE  $BACKUP_DIR_ABS/						
+						
+						echo "cp -f 	$OUTPUT_FILE_DIR/*.mbn   ${INPUT_FILE_DIR%/*}/$INPUT_FILE"
+						cp -f 	$OUTPUT_FILE_DIR/*.mbn    ${INPUT_FILE_DIR%/*}/$INPUT_FILE		   
+				fi
+				
+				#remove signed and  copied mbn , prepare for next file copy with *.mbn  will not have error
+				rm -f 	$OUTPUT_FILE_DIR/*.mbn
+				cp -f   $OUTPUT_FILE_DIR/*.*   $SRC_TOP_DIR/common/build/bin/asic/pil_split_bins/					
+				 
+				
+				######### special teatment about venus.mbn , venus.b* will copy to 
+				#########/LINUX/android/out/target/product/msm8909/system/etc/firmware/
+				result=$(echo $INPUT_FILE_DIR | grep "firmware")
+				if [[ "$result" != "" ]]
+				then
+				 echo "######## for venus.* will copy to $INPUT_FILE_DIR #########"
+				 cp -f $SRC_TOP_DIR/common/build/bin/asic/pil_split_bins/venus.*    $INPUT_FILE_DIR
+				 rm -f $SRC_TOP_DIR/common/build/bin/asic/pil_split_bins/venus.*				 
+									 
+					### for signed venus.mbn need to be repacked to system.img , need to make systemimage again
+					#user can pass "true to ignore make system.img to save time"
+					echo $DEV_IGN_MAKE_SYSTEM_IMG
+					if [[ $DEV_IGN_MAKE_SYSTEM_IMG  != true ]] ; then 
+						cd LINUX/android
+						rm -f $ANDROID_PRODUCT_OUT/system.img
+						make  -j8
+					fi
+					#add a mark to let non sign pack process aware .
+				  touch $ANDROID_PRODUCT_OUT/BLUEBANK_VENUS_SIGNED
+	        
+				fi	
+				
+				
+		fi
+		
+		
+		
+ 
+ 	   
+done
+
+#the last single file copy
+# backup first 
+cd $SRC_TOP_DIR
+cp --parents -f common/tools/sectools/resources/build/sec.dat  $BACKUP_DIR_ABS/
+ 
+#LF2403S use a different sec.dat
+if [ $BLUEBANK_TARGET_PRODUCT  == LF2403S_MSM8909_512 ] ; then
+cp -f $SRC_TOP_DIR/common/tools/sectools/fuseblower_output/LF2403S_MSM8909_512/sec.dat    $SRC_TOP_DIR/common/tools/sectools/resources/build/
+
+else
+cp -f $SRC_TOP_DIR/common/tools/sectools/fuseblower_output/v1/sec.dat    $SRC_TOP_DIR/common/tools/sectools/resources/build/
+
+fi
+ 
+echo "Signning finished ....."
+
+cd $SRC_TOP_DIR
